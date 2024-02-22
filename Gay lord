@@ -1,0 +1,243 @@
+
+// Import the necessary packages
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+// Define the constants for the window size and the game speed
+public class FlappyBird {
+    public static final int WIDTH = 800;
+    public static final int HEIGHT = 600;
+    public static final int SPEED = 10;
+
+    // Declare the variables for the game objects and the game state
+    private JFrame frame;
+    private Bird bird;
+    private Pipe pipe;
+    private boolean running;
+    private int score;
+
+    // Create the constructor for the game class
+    public FlappyBird() {
+        // Initialize the game objects and the game state
+        frame = new JFrame("Flappy Bird");
+        bird = new Bird();
+        pipe = new Pipe();
+        running = false;
+        score = 0;
+
+        // Set the properties of the frame
+        frame.setSize(WIDTH, HEIGHT);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setResizable(false);
+        frame.setLocationRelativeTo(null);
+
+        // Add a key listener to the frame to handle the user input
+        frame.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                // If the user presses the space bar, make the bird jump
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    bird.jump();
+                }
+                // If the user presses the enter key, start or restart the game
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    start();
+                }
+            }
+        });
+
+        // Add a panel to the frame to draw the game graphics
+        frame.add(new JPanel() {
+            @Override
+            public void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                // Draw a white background
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, WIDTH, HEIGHT);
+                // Draw the bird
+                bird.draw(g);
+                // Draw the pipe
+                pipe.draw(g);
+                // Draw the score
+                g.setColor(Color.BLACK);
+                g.setFont(new Font("Arial", Font.BOLD, 32));
+                g.drawString("Score: " + score, 20, 50);
+                // Draw the instructions
+                if (!running) {
+                    g.drawString("Press ENTER to start", 250, 300);
+                }
+            }
+        });
+
+        // Make the frame visible
+        frame.setVisible(true);
+    }
+
+    // Define the method to start or restart the game
+    public void start() {
+        // Reset the game objects and the game state
+        bird.reset();
+        pipe.reset();
+        running = true;
+        score = 0;
+
+        // Create a timer to update the game logic and graphics
+        Timer timer = new Timer(SPEED, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Update the bird and the pipe
+                bird.update();
+                pipe.update();
+                // Check for collision and game over
+                if (bird.collide(pipe)) {
+                    running = false;
+                    ((Timer) e.getSource()).stop();
+                }
+                // Check for score increment
+                if (bird.pass(pipe)) {
+                    score++;
+                }
+                // Repaint the frame
+                frame.repaint();
+            }
+        });
+
+        // Start the timer
+        timer.start();
+    }
+
+    // Define the inner class for the bird object
+    public class Bird {
+        // Define the constants for the bird size and the gravity
+        public static final int SIZE = 50;
+        public static final int GRAVITY = 1;
+
+        // Declare the variables for the bird position and velocity
+        private int x;
+        private int y;
+        private int vy;
+
+        // Create the constructor for the bird class
+        public Bird() {
+            // Initialize the bird position and velocity
+            reset();
+        }
+
+        // Define the method to reset the bird position and velocity
+        public void reset() {
+            x = 100;
+            y = 300;
+            vy = 0;
+        }
+
+        // Define the method to update the bird position and velocity
+        public void update() {
+            // Apply the gravity to the bird velocity
+            vy += GRAVITY;
+            // Update the bird position
+            y += vy;
+            // Check for the window boundaries
+            if (y < 0) {
+                y = 0;
+            }
+            if (y > HEIGHT - SIZE) {
+                y = HEIGHT - SIZE;
+            }
+        }
+
+        // Define the method to make the bird jump
+        public void jump() {
+            // Set the bird velocity to a negative value
+            vy = -15;
+        }
+
+        // Define the method to draw the bird
+        public void draw(Graphics g) {
+            // Draw a yellow circle for the bird
+            g.setColor(Color.YELLOW);
+            g.fillOval(x, y, SIZE, SIZE);
+        }
+
+        // Define the method to check for collision with the pipe
+        public boolean collide(Pipe pipe) {
+            // Get the bounds of the bird and the pipe
+            Rectangle birdBounds = new Rectangle(x, y, SIZE, SIZE);
+            Rectangle pipeBounds = new Rectangle(pipe.getX(), 0, pipe.getWidth(), pipe.getGap());
+            Rectangle pipeBounds2 = new Rectangle(pipe.getX(), pipe.getGap() + pipe.getGapHeight(), pipe.getWidth(), HEIGHT - pipe.getGap() - pipe.getGapHeight());
+            // Check for intersection
+            return birdBounds.intersects(pipeBounds) || birdBounds.intersects(pipeBounds2);
+        }
+
+        // Define the method to check for score increment
+        public boolean pass(Pipe pipe) {
+            // Check if the bird has passed the pipe
+            return x == pipe.getX() + pipe.getWidth();
+        }
+    }
+
+    // Define the inner class for the pipe object
+    public class Pipe {
+        // Define the constants for the pipe width and the gap height
+        public static final int WIDTH = 100;
+        public static final int GAP_HEIGHT = 200;
+
+        // Declare the variables for the pipe position and the gap position
+        private int x;
+        private int gap;
+
+        // Create the constructor for the pipe class
+        public Pipe() {
+            // Initialize the pipe position and the gap position
+            reset();
+        }
+
+        // Define the method to reset the pipe position and the gap position
+        public void reset() {
+            x = WIDTH + 500;
+            gap = (int) (Math.random() * (HEIGHT - GAP_HEIGHT));
+        }
+
+        // Define the method to update the pipe position
+        public void update() {
+            // Move the pipe to the left
+            x -= 5;
+            // Check for the window boundaries
+            if (x < -WIDTH) {
+                x = WIDTH + 500;
+                gap = (int) (Math.random() * (HEIGHT - GAP_HEIGHT));
+            }
+        }
+
+        // Define the method to draw the pipe
+        public void draw(Graphics g) {
+            // Draw two green rectangles for the pipe
+            g.setColor(Color.GREEN);
+            g.fillRect(x, 0, WIDTH, gap);
+            g.fillRect(x, gap + GAP_HEIGHT, WIDTH, HEIGHT - gap - GAP_HEIGHT);
+        }
+
+        // Define the getters for the pipe position and the gap position
+        public int getX() {
+            return x;
+        }
+
+        public int getWidth() {
+            return WIDTH;
+        }
+
+        public int getGap() {
+            return gap;
+        }
+
+        public int getGapHeight() {
+            return GAP_HEIGHT;
+        }
+    }
+
+    // Define the main method to run the game
+    public static void main(String[] args) {
+        // Create a new instance of the game class
+        FlappyBird game = new FlappyBird();
+    }
+}
